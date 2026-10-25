@@ -1033,6 +1033,117 @@
         });
     }
 
+    function parseHomeLecture(lines) {
+        const period = lines[0]?.normalize("NFKC").match(/^\s*(\d+)(?:[・･]\d+)?限.*?(\d{1,2}:\d{2}\s*[-–〜~]\s*\d{1,2}:\d{2})/);
+        if (!period || !lines[1]) return null;
+        const slot = Math.ceil(Number(period[1]) / 2);
+        if (slot < 1 || slot > 5) return null;
+        return { slot, period: lines[0].trim(), subject: lines[1].trim(),
+            // Without a classroom the portal emits only three lines; the last is the teacher.
+            room: lines.length >= 4 ? lines[2].trim() : "" };
+    }
+
+    function installHomeSchedule() {
+        const container = document.querySelector(".index-container");
+        if (!container || document.getElementById("cg-home-schedule")) return;
+        let calendar;
+        const style = document.createElement("style");
+        style.id = "cg-home-schedule";
+        style.textContent = `
+            .cg-home .calender_week .column { min-width: 0; }
+            .cg-home .calender_week .content { min-width: 0; }
+            .cg-home .calender_week .scheduleList.cg-slot-list {
+                display: grid; grid-template-rows: repeat(5, var(--cg-slot-height, 120px));
+                grid-auto-rows: auto; gap: 6px; padding: 5px; margin: 0; box-sizing: border-box;
+            }
+            .cg-home .cg-home-slot { min-width: 0; list-style: none; margin: 0; padding: 0; }
+            .cg-home .cg-home-slot-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; min-height: 100%; }
+            .cg-home .calender_week .scheduleList_item.cg-home-lecture {
+                box-sizing: border-box; min-width: 0; width: 100%; margin: 0; padding: 8px 6px;
+                background-color: rgba(220, 238, 255, .24);
+            }
+            .cg-home .cg-home-lecture .index-schedule-type-lecuture { display: none; }
+            .cg-home .cg-home-lecture .scheduleTitle {
+                margin: 0; padding: 0; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere;
+            }
+            .cg-home .cg-home-lecture .scheduleTitle > span { display: block; }
+            .cg-home .cg-home-subject { font-weight: 400; margin: 4px 0; }
+            .cg-home .cg-home-room { color: #536174; }
+        `;
+        document.head.appendChild(style);
+        const measure = () => {
+            if (!calendar?.isConnected) return;
+            let height = 0;
+            calendar.querySelectorAll(".cg-home-slot-items").forEach(items => {
+                const cards = [...items.children];
+                const square = parseFloat(getComputedStyle(items).width) || 0;
+                const natural = cards.reduce((sum, card) => {
+                    const css = getComputedStyle(card);
+                    return sum + card.querySelector(".scheduleTitle").scrollHeight
+                        + parseFloat(css.paddingTop) + parseFloat(css.paddingBottom);
+                }, 0) + Math.max(0, cards.length - 1) * 6;
+                height = Math.max(height, square, natural);
+            });
+            // Prefer squares; only grow when the text needs more room. Use CSS pixels even at page zoom.
+            calendar.style.setProperty("--cg-slot-height", `${Math.ceil(height)}px`);
+        };
+        const update = () => {
+            calendar = container.querySelector(".calender_week");
+            if (!calendar) return;
+            calendar.querySelectorAll(".column > .content").forEach(day => {
+                let list = day.querySelector(".scheduleList");
+                if (!list) {
+                    list = document.createElement("ul");
+                    list.className = "scheduleList";
+                    day.appendChild(list);
+                }
+                if (!list.classList.contains("cg-slot-list")) {
+                    list.classList.add("cg-slot-list");
+                    for (let slot = 1; slot <= 5; slot++) {
+                        const cell = document.createElement("li");
+                        cell.className = "cg-home-slot";
+                        cell.style.gridRow = slot;
+                        const items = document.createElement("ul");
+                        items.className = "cg-home-slot-items";
+                        cell.appendChild(items);
+                        list.appendChild(cell);
+                    }
+                }
+                list.querySelectorAll(".scheduleList_item:not(.cg-home-lecture):not(.cg-home-other)").forEach(card => {
+                    const title = card.querySelector(".scheduleTitle");
+                    const copy = title?.cloneNode(true);
+                    copy?.querySelectorAll("br").forEach(br => br.replaceWith("\n"));
+                    const lecture = card.querySelector(".index-schedule-type-lecuture")
+                        && copy && parseHomeLecture(copy.textContent.split("\n"));
+                    if (!lecture) {
+                        card.classList.add("cg-home-other");
+                        return; // Keep events and unrecognised periods intact after the five slots.
+                    }
+                    title.replaceChildren();
+                    for (const key of ["period", "subject", "room"]) {
+                        if (!lecture[key]) continue;
+                        const line = document.createElement("span");
+                        line.className = `cg-home-${key}`;
+                        line.textContent = lecture[key];
+                        title.appendChild(line);
+                    }
+                    card.classList.add("cg-home-lecture");
+                    list.querySelectorAll(".cg-home-slot-items")[lecture.slot - 1].appendChild(card);
+                });
+            });
+            measure();
+        };
+        update();
+        // The portal replaces the calendar itself after startup; observe its stable parent.
+        new MutationObserver(update).observe(container, { childList: true, subtree: true });
+        let width = container.getBoundingClientRect().width;
+        if (typeof ResizeObserver !== "undefined") new ResizeObserver(() => {
+            const next = container.getBoundingClientRect().width;
+            if (next !== width) { width = next; requestAnimationFrame(measure); }
+        }).observe(container);
+        document.fonts?.ready.then(measure);
+    }
+
     function installHomeAppearance() {
         document.documentElement.classList.add("cg-home");
         const style = document.createElement("style");
@@ -1462,6 +1573,7 @@
 
         if (document.title === "ホーム画面（学生・保護者）") {
             installHomeAppearance();
+            installHomeSchedule();
             const versionLink = document.createElement("a");
             versionLink.className = "cg-version-link";
             versionLink.href = updateURL;

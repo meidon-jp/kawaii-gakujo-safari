@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Comfortable Gakujo (Safari Userscripts)
-// @namespace    https://github.com/meidon-jp/comfortable-gakujo-safari
-// @version      1.12.15
-// @description  READMEを必ず読んでからご利用ください：https://github.com/meidon-jp/comfortable-gakujo-safari/blob/main/README.md
+// @name         Kawaii Gakujo (Safari Userscripts)
+// @namespace    https://github.com/meidon-jp/kawaii-gakujo-safari
+// @version      1.13.0
+// @description  READMEを必ず読んでからご利用ください：https://github.com/meidon-jp/kawaii-gakujo-safari/blob/main/README.md
 // @author       woody_1227
 // @license      MIT
 // @match        https://gakujo.shizuoka.ac.jp/*
@@ -10,9 +10,9 @@
 // @run-at       document-start
 // @inject-into  page
 // @grant        none
-// @updateURL    https://raw.githubusercontent.com/meidon-jp/comfortable-gakujo-safari/main/src/Comfortable_Gakujo.user.js
-// @downloadURL  https://raw.githubusercontent.com/meidon-jp/comfortable-gakujo-safari/main/src/Comfortable_Gakujo.user.js
-// @icon         https://raw.githubusercontent.com/meidon-jp/comfortable-gakujo-safari/main/src/icon.png
+// @updateURL    https://raw.githubusercontent.com/meidon-jp/kawaii-gakujo-safari/main/src/Kawaii_Gakujo.user.js
+// @downloadURL  https://raw.githubusercontent.com/meidon-jp/kawaii-gakujo-safari/main/src/Kawaii_Gakujo.user.js
+// @icon         https://raw.githubusercontent.com/meidon-jp/kawaii-gakujo-safari/main/src/icon.png
 // ==/UserScript==
 
 /*
@@ -43,8 +43,8 @@
 (function () {
     'use strict';
 
-    const version = "1.12.15";
-    const updateURL = "https://raw.githubusercontent.com/meidon-jp/comfortable-gakujo-safari/main/src/Comfortable_Gakujo.user.js";
+    const version = "1.13.0";
+    const updateURL = "https://raw.githubusercontent.com/meidon-jp/kawaii-gakujo-safari/main/src/Kawaii_Gakujo.user.js";
 
     function waitForSelector(selector, timeout = 10000) {
         const existing = document.querySelector(selector);
@@ -299,7 +299,7 @@
     }
 
     let initializationStarted = false;
-    async function initializeComfortableGakujo() {
+    async function initializeKawaiiGakujo() {
         if (initializationStarted) return;
         initializationStarted = true;
         try {
@@ -316,7 +316,7 @@
 
             console.log("[CG] page ready → start");
 
-            startComfortableGakujo();
+            startKawaiiGakujo();
 
         } catch (e) {
             console.warn("[CG] initialization failed:", e);
@@ -324,9 +324,9 @@
     }
 
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initializeComfortableGakujo, { once: true });
+        document.addEventListener("DOMContentLoaded", initializeKawaiiGakujo, { once: true });
     } else {
-        setTimeout(initializeComfortableGakujo, 0);
+        setTimeout(initializeKawaiiGakujo, 0);
     }
 
     const setCookie = (name, value, days = 365) => {
@@ -968,16 +968,35 @@
             const url = new URL(frame.src, location.href);
             if (url.origin !== location.origin || !url.pathname.endsWith("/recordDashBoard")) return;
             const doc = frame.contentDocument;
-            if (!doc?.head || doc.getElementById("cg-home-grade-glass")) return;
-            const style = doc.createElement("style");
-            style.id = "cg-home-grade-glass";
-            style.textContent = `
+            if (!doc?.head) return;
+            if (!doc.getElementById("cg-home-grade-glass")) {
+                const style = doc.createElement("style");
+                style.id = "cg-home-grade-glass";
+                style.textContent = `
                 html, body, .c-wrapper, .c-container, .c-contents, .c-box-shadow, body > div, canvas,
                 .dashboard_box, .graphList_item, .c-footer-inner {
                     background-color: transparent !important;
                 }
+                html {
+                    min-width: calc((100vw + 1px) / var(--cg-grade-frame-scale, 1));
+                    min-height: calc((100vh + 1px) / var(--cg-grade-frame-scale, 1));
+                }
             `;
-            doc.head.appendChild(style);
+                doc.head.appendChild(style);
+            }
+            // At reduced Safari page zoom, the root's transparent canvas can be
+            // smaller than its iframe. Cover the viewport, including rounded edges.
+            const root = doc.documentElement;
+            if (root && doc.defaultView) {
+                const layoutWidth = parseFloat(doc.defaultView.getComputedStyle(root).width);
+                const renderedWidth = root.getBoundingClientRect().width;
+                if (layoutWidth > 0 && renderedWidth > 0) {
+                    root.style.setProperty("--cg-grade-frame-scale", String(Math.min(1, renderedWidth / layoutWidth)));
+                }
+            }
+            if (doc.readyState === "complete" && doc.getElementById("dashBoards")) {
+                frame.closest("#dashboard")?.classList.add("cg-grade-frame-ready");
+            }
         } catch (error) { console.debug("[CG] 成績パネルの背景調整を省略", error); }
     }
 
@@ -1000,7 +1019,9 @@
             if (expanded) requestAnimationFrame(() => {
                 // Keep the portal's accordion handler; only resize charts after it opens.
                 try {
-                    const frameWindow = body.querySelector("iframe")?.contentWindow;
+                    const frame = body.querySelector("iframe");
+                    if (frame) styleHomeGradeFrame(frame);
+                    const frameWindow = frame?.contentWindow;
                     frameWindow?.dispatchEvent(new frameWindow.Event("resize"));
                 } catch (error) { console.debug("[CG] 成績グラフのサイズ調整を省略", error); }
             });
@@ -1080,7 +1101,8 @@
             }
             .cg-home .cg-grade-toggle.is-open::after { transform: translate(-50%, -30%) rotate(225deg); }
             .cg-home .cg-grade-toggle:focus-visible { outline: 2px solid #536174; outline-offset: 3px; }
-            .cg-home #dashboard.cg-grade-collapsed #recordDashBoardReading { display: none !important; }
+            .cg-home #dashboard.cg-grade-collapsed #recordDashBoardReading,
+            .cg-home #dashboard.cg-grade-frame-ready #recordDashBoardReading { display: none !important; }
             .cg-home .index-container .scheduleList,
             .cg-home .index-container dd.content { background-color: transparent !important; }
             .cg-home .index-container .scheduleList_item,
@@ -1107,6 +1129,9 @@
         document.head.appendChild(style);
         installHomeGradeDisclosure();
         document.querySelectorAll("iframe").forEach(styleHomeGradeFrame);
+        window.addEventListener("resize", () => requestAnimationFrame(() => {
+            document.querySelectorAll("iframe").forEach(styleHomeGradeFrame);
+        }));
         document.addEventListener("load", event => {
             if (event.target.tagName === "IFRAME") styleHomeGradeFrame(event.target);
         }, true);
@@ -1369,8 +1394,8 @@
         return response.blob();
     }
 
-    function startComfortableGakujo() {
-        console.log("[CG] startComfortableGakujo (DOM ready)");
+    function startKawaiiGakujo() {
+        console.log("[CG] startKawaiiGakujo (DOM ready)");
         installReferenceTimetableOrder();
         const pageBackground = installHeaderBackgroundSettings();
 
@@ -1440,8 +1465,8 @@
             const versionLink = document.createElement("a");
             versionLink.className = "cg-version-link";
             versionLink.href = updateURL;
-            versionLink.title = "Comfortable Gakujo をアップデート";
-            versionLink.textContent = `Comfortable Gakujo v${version}`;
+            versionLink.title = "Kawaii Gakujo をアップデート";
+            versionLink.textContent = `Kawaii Gakujo v${version}`;
             document.querySelector(".index-main-visual-user-information")?.appendChild(versionLink);
 
             observeUntilReady(() => {

@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const source = fs.readFileSync('src/Comfortable_Gakujo.user.js', 'utf8');
+const source = fs.readFileSync('src/Kawaii_Gakujo.user.js', 'utf8');
 
 function frameContext() {
     const context = vm.createContext({ URL, console,
@@ -33,6 +33,45 @@ test('other frames and foreign origins are never inspected or modified', () => {
     context.styleHomeGradeFrame({ src: '/lcu-web/SC_01002B00_01/recordDashBoard', contentDocument: null });
 });
 
+test('grade canvas follows page zoom and keeps its last size while collapsed', () => {
+    const context = frameContext();
+    const properties = new Map(), styles = [];
+    let renderedWidth = 850;
+    const doc = { head: { appendChild: style => styles.push(style) },
+        getElementById: id => styles.find(style => style.id === id), createElement: () => ({}),
+        documentElement: { style: { setProperty: (name, value) => properties.set(name, value) },
+            getBoundingClientRect: () => ({ width: renderedWidth }) },
+        defaultView: { getComputedStyle: () => ({ width: '1000px' }) },
+    };
+    const frame = { src: '/lcu-web/SC_01002B00_01/recordDashBoard', contentDocument: doc };
+    context.styleHomeGradeFrame(frame);
+    assert.equal(properties.get('--cg-grade-frame-scale'), '0.85');
+    renderedWidth = 0; // Hidden iframes have no measurable rectangle.
+    context.styleHomeGradeFrame(frame);
+    assert.equal(properties.get('--cg-grade-frame-scale'), '0.85');
+    renderedWidth = 1000;
+    context.styleHomeGradeFrame(frame);
+    assert.equal(properties.get('--cg-grade-frame-scale'), '1');
+    renderedWidth = 1250;
+    context.styleHomeGradeFrame(frame);
+    assert.equal(properties.get('--cg-grade-frame-scale'), '1', 'enlarged pages already cover the canvas');
+    assert.equal(styles.length, 1, 'resizing must not duplicate styles');
+});
+
+test('grade loading indicator is cleared only for a completed dashboard document', () => {
+    const context = frameContext(), classes = new Set();
+    const doc = { readyState: 'loading', head: {},
+        getElementById: id => id === 'cg-home-grade-glass' || id === 'dashBoards' ? {} : null };
+    const dashboard = { classList: { add: name => classes.add(name) } };
+    const frame = { src: '/lcu-web/SC_01002B00_01/recordDashBoard', contentDocument: doc,
+        closest: selector => selector === '#dashboard' ? dashboard : null };
+    context.styleHomeGradeFrame(frame);
+    assert.equal(classes.size, 0);
+    doc.readyState = 'complete';
+    context.styleHomeGradeFrame(frame);
+    assert.equal(classes.has('cg-grade-frame-ready'), true);
+});
+
 function disclosureFixture() {
     let observer, resizes = 0, nativeClicks = 0;
     const classes = new Set(['c-btn-toggle', 'js-accordion', 'is-open']);
@@ -54,7 +93,9 @@ function disclosureFixture() {
     const dashboard = { querySelector: selector => selector === '.c-btn-toggle.js-accordion' ? button : body,
         classList: { toggle(name, enabled) { enabled ? dashboardClasses.add(name) : dashboardClasses.delete(name); } } };
     const pendingFrames = [];
+    const frameStyles = [];
     const context = vm.createContext({ console, requestAnimationFrame: callback => pendingFrames.push(callback),
+        styleHomeGradeFrame: target => frameStyles.push(target),
         MutationObserver: class { constructor(callback) { this.callback = callback; } observe(target, options) {
             assert.equal(target, button); assert.equal(options.attributeFilter.join(), 'class'); observer = this.callback;
         } },
@@ -62,7 +103,7 @@ function disclosureFixture() {
             createElement: () => assert.fail('must reuse the native control') },
     });
     vm.runInContext(source.slice(source.indexOf('    function installHomeGradeDisclosure('), source.indexOf('    function installHomeAppearance(')), context);
-    return { context, body, button, dashboardClasses, frame, pendingFrames, resizes: () => resizes, nativeClicks: () => nativeClicks };
+    return { context, body, button, dashboardClasses, frame, frameStyles, pendingFrames, resizes: () => resizes, nativeClicks: () => nativeClicks };
 }
 
 test('home grades start closed and keep the native accordion and iframe', () => {
@@ -82,6 +123,7 @@ test('home grades start closed and keep the native accordion and iframe', () => 
     assert.equal(f.resizes(), 0, 'resize waits until the frame is visible');
     f.pendingFrames.shift()();
     assert.equal(f.resizes(), 1);
+    assert.deepEqual(f.frameStyles, [f.frame], 'recalculate the canvas after expanding a previously hidden iframe');
     assert.equal(f.body.querySelector('iframe'), f.frame);
     f.context.installHomeGradeDisclosure();
     assert.equal(f.body.style.display, 'block', 'repeat setup must not close an open dashboard');

@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const source = fs.readFileSync('src/Comfortable_Gakujo.user.js', 'utf8');
+const source = fs.readFileSync('src/Kawaii_Gakujo.user.js', 'utf8');
 const helpers = source.slice(source.indexOf('    function prepareHeaderImage('), source.indexOf('    function installHeaderBackgroundSettings('));
 
 function setup({ png = 'data:image/png;base64,small', jpeg = 'data:image/jpeg;base64,small', noContext = false } = {}) {

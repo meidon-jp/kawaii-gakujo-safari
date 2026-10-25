@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const source = fs.readFileSync('src/Comfortable_Gakujo.user.js', 'utf8');
+const source = fs.readFileSync('src/Kawaii_Gakujo.user.js', 'utf8');
 const helpers = source.slice(source.indexOf('    function waitForSelector('), source.indexOf('    // Check existing content'));
 const backgroundHelpers = source.slice(source.indexOf('    function homeTaskDeadline('), source.indexOf('    function createHeaderBackgroundController('));
 

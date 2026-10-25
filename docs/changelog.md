@@ -1,5 +1,13 @@
 # 更新履歴
 
+### Safari Userscripts版 ver1.13.0
+
+- 名前を Kawaii Gakujo for Safari に変更しました．リポジトリと更新先は `meidon-jp/kawaii-gakujo-safari`，スクリプトは `Kawaii_Gakujo.user.js` です．元作者の著作権表示とMITライセンスを保持しています．
+
+### Safari Userscripts版 ver1.12.16
+
+- Safariで縮小表示したとき，成績ダッシュボードの右端と下端に白いL字の領域が残る問題を修正しました．
+
 ### Safari Userscripts版 ver1.12.15
 
 - ホームの成績ダッシュボードを初めは閉じ，右端の開閉ボタンを押すと開閉できるようにしました．

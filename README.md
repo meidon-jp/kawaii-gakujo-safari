@@ -1,6 +1,6 @@
-# Comfortable Gakujo for Safari
+# Kawaii Gakujo for Safari
 
-![version](https://img.shields.io/badge/version-1.12.15-green)
+![version](https://img.shields.io/badge/version-1.13.0-green)
 
 静岡大学の学情を使いやすくするユーザースクリプトです．
 woody-1227さんの [Comfortable-Gakujo](https://github.com/woody-1227/Comfortable-Gakujo) を，Safariでも使えるようにしました．実行には [Userscripts](https://github.com/quoid/userscripts) を使っています．
@@ -11,11 +11,13 @@ woody-1227さんの [Comfortable-Gakujo](https://github.com/woody-1227/Comfortab
 2. Safariの設定でUserscriptsを有効にします．
    - macOS：「Safari」→「設定」→「機能拡張」
    - iOS・iPadOS：「設定」→「アプリ」→「Safari」→「機能拡張」（旧OSでは「設定」→「Safari」）
-3. Safariで [スクリプト](https://raw.githubusercontent.com/meidon-jp/comfortable-gakujo-safari/main/src/Comfortable_Gakujo.user.js) を開き，Userscriptsのポップアップから登録します．
+3. Safariで [スクリプト](https://raw.githubusercontent.com/meidon-jp/kawaii-gakujo-safari/main/src/Kawaii_Gakujo.user.js) を開き，Userscriptsのポップアップから登録します．
 4. 学情を開き，Userscriptsによる `gakujo.shizuoka.ac.jp` へのアクセスを「常に許可」にします．SSOの自動同意を使う場合は `idp.shizuoka.ac.jp` も許可してください．
-5. Userscriptsの `Enable Injection` と `Comfortable Gakujo (Safari Userscripts)` をONにし，ページを再読み込みします．
+5. Userscriptsの `Enable Injection` と `Kawaii Gakujo (Safari Userscripts)` をONにし，ページを再読み込みします．
 
-登録できない場合は，[.user.js](src/Comfortable_Gakujo.user.js) をUserscriptsの保存先へ**コピー**してください．コピー後はポップアップを一度開いてから，学情を再読み込みします．元版を登録済みの場合は，重複しないようOFFにしてください．
+登録できない場合は，[.user.js](src/Kawaii_Gakujo.user.js) をUserscriptsの保存先へ**コピー**してください．コピー後はポップアップを一度開いてから，学情を再読み込みします．元版を登録済みの場合は，重複しないようOFFにしてください．
+
+旧名の `Comfortable Gakujo (Safari Userscripts)` を使っている場合は，新しいスクリプトを登録し，旧名の方をOFFにしてください．同じブラウザの背景画像や設定は引き継ぎます．
 
 ## 機能
 
@@ -30,7 +32,7 @@ woody-1227さんの [Comfortable-Gakujo](https://github.com/woody-1227/Comfortab
 ## 更新
 
 Userscriptsの `Available Updates` から更新します．macOSではエディタの `Update` ボタンも使えます．
-手動で更新する場合は，[スクリプト](https://raw.githubusercontent.com/meidon-jp/comfortable-gakujo-safari/main/src/Comfortable_Gakujo.user.js) をもう一度開いて登録してください．更新後は学情を再読み込みします．
+手動で更新する場合は，[スクリプト](https://raw.githubusercontent.com/meidon-jp/kawaii-gakujo-safari/main/src/Kawaii_Gakujo.user.js) をもう一度開いて登録してください．更新後は学情を再読み込みします．
 
 更新先はこのリポジトリです．移植元の更新は自動では取り込みません．[更新履歴](docs/changelog.md)
 

@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const source = fs.readFileSync('src/Comfortable_Gakujo.user.js', 'utf8');
+const source = fs.readFileSync('src/Kawaii_Gakujo.user.js', 'utf8');
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
 for (const readyState of ['loading', 'interactive', 'complete']) {
@@ -20,7 +20,7 @@ for (const readyState of ['loading', 'interactive', 'complete']) {
         });
         vm.runInContext(source.slice(source.indexOf('    function waitForSelector('),
             source.indexOf('    const setCookie =')), context);
-        context.startComfortableGakujo = () => starts++;
+        context.startKawaiiGakujo = () => starts++;
         assert.equal(starts, 0);
         const initialize = readyState === 'loading' ? listeners.get('DOMContentLoaded') : timers[0];
         await initialize();
@@ -117,7 +117,7 @@ function preview({ javascript = true, jquery = true, method = 'POST', extension 
     context.closeLoading = window.closeLoading;
     const helperStart = source.indexOf('    async function fetchPreviewBlob(');
     if (helperStart !== -1) {
-        vm.runInContext(source.slice(helperStart, source.indexOf('    function startComfortableGakujo()')), context);
+        vm.runInContext(source.slice(helperStart, source.indexOf('    function startKawaiiGakujo()')), context);
     }
     vm.runInContext(source.slice(source.indexOf('        const previewMimeTypes ='),
         source.indexOf('        document.addEventListener("click", event =>', source.indexOf('        const previewMimeTypes ='))), context);

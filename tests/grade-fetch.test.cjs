@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const { webcrypto } = require('node:crypto');
-const source = fs.readFileSync('src/Comfortable_Gakujo.user.js', 'utf8');
+const source = fs.readFileSync('src/Kawaii_Gakujo.user.js', 'utf8');
 function setup() {
     const cookies = new Map([['cg_grade_save_enabled', '1']]);
     let page;
@@ -16,7 +16,7 @@ function setup() {
         showUpdateNotice() {},
     });
     vm.runInContext(source.slice(source.indexOf('    // Resolve only'), source.indexOf('    function showUpdateNotice()')) +
-        source.slice(source.indexOf('    async function sha256('), source.indexOf('    function startComfortableGakujo()')), context);
+        source.slice(source.indexOf('    async function sha256('), source.indexOf('    function startKawaiiGakujo()')), context);
     context.explicitSubmission = () => ({});
     context.fetchPage = async () => {
         if (page instanceof Error) throw page;

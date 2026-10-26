@@ -5,6 +5,7 @@ const vm = require('node:vm');
 const source = fs.readFileSync('src/Kawaii_Gakujo.user.js', 'utf8');
 const helpers = source.slice(source.indexOf('    function waitForSelector('), source.indexOf('    // Check existing content'));
 const backgroundHelpers = source.slice(source.indexOf('    function homeTaskDeadline('), source.indexOf('    function createHeaderBackgroundController('));
+const otherPageBackground = source.slice(source.indexOf('    function installOtherPageDeadlineBackground('), source.indexOf('    function startKawaiiGakujo('));
 
 test('existing elements are ready without a polling or stabilization delay', async () => {
     const node = {};
@@ -80,16 +81,20 @@ test('background never modifies SSO or embedded pages', () => {
     }
 });
 
-test('glass content styles are limited to task and notice list/detail pages', () => {
-    for (const [title, glass, taskDetail, notice] of [
+test('glass content styles are limited to supported portal pages', () => {
+    for (const [title, glass, taskDetail, notice, reference = false, syllabus = false, registration = false] of [
         ['課題・アンケートリスト', true, false, false],
         ['課題・アンケート提出', true, true, false],
         ['課題・アンケート詳細', true, true, false],
         ['連絡一覧', true, false, true],
         ['連絡詳細', true, false, true],
+        ['授業参考情報一覧', true, false, false, true],
+        ['授業参考情報詳細', true, false, false, true],
+        ['シラバス検索', true, false, false, false, true],
+        ['シラバス詳細', true, false, false, false, true],
         ['ホーム画面（学生・保護者）', false, false, false],
         ['成績情報', false, false, false],
-        ['履修登録', false, false, false],
+        ['履修登録', true, false, false, false, false, true],
     ]) {
         const state = earlyPage({ ready: true });
         state.context.document.title = title;
@@ -97,6 +102,9 @@ test('glass content styles are limited to task and notice list/detail pages', ()
         assert.equal(state.classes.has('cg-glass-content'), glass, title);
         assert.equal(state.classes.has('cg-task-detail'), taskDetail, title);
         assert.equal(state.classes.has('cg-notice-page'), notice, title);
+        assert.equal(state.classes.has('cg-reference-page'), reference, title);
+        assert.equal(state.classes.has('cg-syllabus-page'), syllabus, title);
+        assert.equal(state.classes.has('cg-registration-page'), registration, title);
     }
 });
 
@@ -117,13 +125,39 @@ test('initial urgency uses current time and configured days, ignoring expired or
         [{ deadlines: [now + 2.5 * 86400000], warningDays: '4' }, 'warning'],
         [{ deadlines: [now + 2.5 * 86400000] }, undefined],
         [{ deadlines: [now - 1000, 'invalid'] }, undefined],
-        [{ deadlines: [now + 3600000], home: false }, undefined],
+        [{ deadlines: [now + 3600000], home: false }, 'critical'],
         [{ blockedStorage: true }, undefined],
     ]) {
         const state = earlyPage({ home: true, ready: true, ...options });
         state.context.installEarlyAppearance();
         assert.equal(state.nodes.get('cg-page-background').dataset.cgDeadlineUrgency, expected);
     }
+});
+
+test('other pages follow cached deadlines as time passes, including the next deadline', () => {
+    const day = 86400000;
+    let now = 100 * day, tick;
+    const deadlines = [now + 1000, now + 4 * day];
+    const rendered = [];
+    const context = vm.createContext({
+        document: { title: '課題・アンケートリスト' },
+        Date: { now: () => now },
+        sessionStorage: { getItem: () => JSON.stringify(deadlines) },
+        setInterval(callback, delay) { assert.equal(delay, 1000); tick = callback; },
+        console,
+    });
+    vm.runInContext(helpers + otherPageBackground, context);
+    context.installOtherPageDeadlineBackground({ render: remaining => rendered.push(remaining) });
+    assert.equal(rendered.at(-1), 1000);
+    now += 2000;
+    tick();
+    assert.equal(rendered.at(-1), 4 * day - 2000);
+    now += 3 * day;
+    tick();
+    assert.equal(rendered.at(-1), day - 2000);
+    now += day;
+    tick();
+    assert.equal(rendered.at(-1), Infinity);
 });
 
 test('deadline cache stores timestamps only, updates changed data and clears completed tasks', () => {

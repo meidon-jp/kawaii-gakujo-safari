@@ -154,7 +154,10 @@
                         background-image: var(--cg-header-critical-image, repeating-linear-gradient(135deg, transparent 0 32px, rgba(255, 60, 60, .2) 32px 64px),
                             radial-gradient(ellipse at 60% 50%, #bb172c, #540b18 65%, #220910)) !important;
                     }
-                    .cg-glass-content .c-container .c-box-shadow {
+                    .cg-glass-content .c-container .c-box-shadow,
+                    .cg-registration-page .stady-sec01-box > ul > li,
+                    .cg-registration-page .stady-sec02-contents,
+                    .cg-registration-page .modal-box {
                         background: rgba(255, 255, 255, .76); border: 1px solid #ffffff8c; border-radius: 18px;
                         box-shadow: 0 8px 32px #18253b12; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
                     }
@@ -181,17 +184,25 @@
                     .cg-glass-content .c-btn-search-large,
                     .cg-glass-content .paginate_button.current { background-color: rgba(35, 41, 50, .8); border-radius: 6px; }
                     .cg-glass-content #dataTable01 th,
-                    .cg-glass-content #hiddenTasksTable th {
+                    .cg-glass-content #hiddenTasksTable th,
+                    :is(.cg-reference-page, .cg-syllabus-page) .c-table th {
                         background-color: rgba(255, 255, 255, .36); color: #34445b; border-color: #52617436;
                     }
                     .cg-glass-content #dataTable01 td,
-                    .cg-glass-content #hiddenTasksTable td { background-color: transparent; border-color: #52617436; }
+                    .cg-glass-content #hiddenTasksTable td,
+                    :is(.cg-reference-page, .cg-syllabus-page) .c-table td { background-color: transparent; border-color: #52617436; }
                     .cg-glass-content #dataTable01 tbody tr,
-                    .cg-glass-content #hiddenTasksTable tbody tr { background-color: rgba(255, 255, 255, .12); }
+                    .cg-glass-content #hiddenTasksTable tbody tr,
+                    :is(.cg-reference-page, .cg-syllabus-page) .c-table tbody tr { background-color: rgba(255, 255, 255, .12); }
                     .cg-glass-content #dataTable01 tbody tr:hover,
-                    .cg-glass-content #hiddenTasksTable tbody tr:hover { background-color: rgba(255, 255, 255, .3); }
+                    .cg-glass-content #hiddenTasksTable tbody tr:hover,
+                    :is(.cg-reference-page, .cg-syllabus-page) .c-table tbody tr:hover { background-color: rgba(255, 255, 255, .3); }
+                    /* is-unread also appears on read rows; only the portal's inline blue marks unread notices. */
+                    .cg-notice-page #dataTable01 tbody tr[style*="background-color: rgb(218, 238, 243)"] { background-color: rgba(218, 238, 243, .55) !important; }
+                    .cg-notice-page #dataTable01 tbody tr[style*="background-color: rgb(218, 238, 243)"]:hover { background-color: rgba(218, 238, 243, .7) !important; }
                     .cg-task-detail .question-heading-container,
-                    .cg-notice-page .c-fixed-heading-container {
+                    .cg-notice-page .c-fixed-heading-container,
+                    .cg-reference-page .c-fixed-heading-container {
                         background-color: rgba(255, 255, 255, .24); color: #253044;
                         border-radius: 18px 18px 0 0; border-color: #ffffff8c;
                     }
@@ -199,7 +210,8 @@
                     .cg-task-detail .deadline_box .days {
                         background-color: rgba(255, 255, 255, .5); border-radius: 6px;
                     }
-                    .cg-task-detail .c-table-line th {
+                    .cg-task-detail .c-table-line th,
+                    :is(.cg-reference-page, .cg-syllabus-page) .c-table-line th {
                         background-color: rgba(255, 255, 255, .24); color: #34445b;
                     }
                     .cg-task-detail .question-heading-h4,
@@ -211,7 +223,47 @@
                     }
                     .cg-task-detail .question-heading-h4 { border-radius: 8px; }
                     .cg-task-detail .c-table-line th,
-                    .cg-task-detail .c-table-line td { border-color: #52617436; }
+                    .cg-task-detail .c-table-line td,
+                    :is(.cg-reference-page, .cg-syllabus-page) .c-table-line th,
+                    :is(.cg-reference-page, .cg-syllabus-page) .c-table-line td { border-color: #52617436; }
+                    :is(.cg-reference-page, .cg-syllabus-page) .c-table-line td { background-color: transparent; }
+                    .cg-syllabus-page .c-heading-h3 { color: #34445b; border-color: #52617436; }
+                    .cg-syllabus-page .c-btn-search-large.c-btn-line {
+                        background-color: rgba(255, 255, 255, .5); color: #34445b; border-color: #52617436;
+                    }
+                    /* The pre-search result form contains only hidden inputs; its border otherwise becomes a white line. */
+                    .cg-syllabus-page .c-box-shadow:has(> form #TableForm_rowIndex):not(:has(.c-heading-container, .c-contents-body, table)) {
+                        background: transparent; border: 0; box-shadow: none;
+                        -webkit-backdrop-filter: none; backdrop-filter: none;
+                    }
+                    .cg-registration-page .stady-sec01-box > ul > li,
+                    .cg-registration-page .stady-sec02-contents,
+                    .cg-registration-page .modal-box {
+                        box-sizing: border-box; background-color: rgba(255, 255, 255, .76) !important;
+                    }
+                    .cg-registration-page .stady-sec01 h3,
+                    .cg-registration-page .ttl-area h3,
+                    .cg-registration-page .lecture-ttl-area h3 { color: #34445b; }
+                    .cg-registration-page .heading-ttl {
+                        background-color: rgba(255, 255, 255, .24) !important; color: #253044;
+                        border-radius: 18px 18px 0 0; border-color: #52617436;
+                    }
+                    .cg-registration-page :is(.unit-table, .schedule-table, .c-table, .c-table-line) :is(th, td) {
+                        background-color: transparent !important; border-color: #52617436;
+                    }
+                    .cg-registration-page :is(.schedule-table, .c-table, .c-table-line) th,
+                    .cg-registration-page .unit-table :is(.header, .header-unit, .sub-header) {
+                        background-color: rgba(255, 255, 255, .36) !important; color: #34445b;
+                    }
+                    .cg-registration-page .schedule-table td,
+                    .cg-registration-page .stady-lecture-list-item-nodata { background-color: rgba(255, 255, 255, .12) !important; }
+                    .cg-registration-page .schedule-table li.modal-open,
+                    .cg-registration-page .stady-lecture-list-item {
+                        background-color: rgba(255, 255, 255, .4) !important; border-radius: 8px;
+                        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .1);
+                    }
+                    .cg-registration-page .stady-sec01-box .right > p,
+                    .cg-registration-page .c-half-btn { background-color: rgba(255, 255, 255, .5) !important; border-color: #52617436; }
                     .cg-task-detail .fileList .preview {
                         background-color: rgba(255, 255, 255, .36); border-radius: 8px;
                     }
@@ -263,22 +315,26 @@
             if (!document.body || !wrapper || !document.querySelector(".c-header")) return false;
             document.documentElement.classList.add("cg-page-appearance");
             if (document.title === "課題・アンケートリスト") document.documentElement.classList.add("cg-task-list");
-            if (["課題・アンケートリスト", "課題・アンケート提出", "課題・アンケート詳細", "連絡一覧", "連絡詳細"].includes(document.title)) {
+            const referencePage = document.title.includes("授業参考情報");
+            const syllabusPage = document.title.includes("シラバス");
+            const registrationPage = document.title === "履修登録";
+            if (referencePage || syllabusPage || registrationPage || ["課題・アンケートリスト", "課題・アンケート提出", "課題・アンケート詳細", "連絡一覧", "連絡詳細"].includes(document.title)) {
                 document.documentElement.classList.add("cg-glass-content");
             }
+            if (referencePage) document.documentElement.classList.add("cg-reference-page");
+            if (syllabusPage) document.documentElement.classList.add("cg-syllabus-page");
+            if (registrationPage) document.documentElement.classList.add("cg-registration-page");
             if (["課題・アンケート提出", "課題・アンケート詳細"].includes(document.title)) document.documentElement.classList.add("cg-task-detail");
             if (["連絡一覧", "連絡詳細"].includes(document.title)) document.documentElement.classList.add("cg-notice-page");
             if (!document.getElementById("cg-page-background")) {
                 const background = document.createElement("div");
                 background.id = "cg-page-background";
                 background.setAttribute("aria-hidden", "true");
-                if (document.title === "ホーム画面（学生・保護者）") {
-                    let warningDays = 3;
-                    try { warningDays = validHeaderWarningDays(localStorage.getItem("cg-header-warning-days")) ?? 3; }
-                    catch (error) { console.debug("[CG] 背景の警告日数を読み込めませんでした", error); }
-                    const now = Date.now();
-                    updateDeadlineBackground(background, cachedHomeDeadline(now) - now, warningDays);
-                }
+                let warningDays = 3;
+                try { warningDays = validHeaderWarningDays(localStorage.getItem("cg-header-warning-days")) ?? 3; }
+                catch (error) { console.debug("[CG] 背景の警告日数を読み込めませんでした", error); }
+                const now = Date.now();
+                updateDeadlineBackground(background, cachedHomeDeadline(now) - now, warningDays);
                 // Portal menu blur makes fixed descendants relative to the tall wrapper. Keep the layer outside it.
                 document.body.appendChild(background);
             }
@@ -1060,7 +1116,8 @@
             .cg-home .cg-home-slot-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; min-height: 100%; }
             .cg-home .calender_week .scheduleList_item.cg-home-lecture {
                 box-sizing: border-box; min-width: 0; width: 100%; margin: 0; padding: 8px 6px;
-                background-color: rgba(220, 238, 255, .24);
+                background-color: rgba(255, 255, 255, .4);
+                box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .1);
             }
             .cg-home .cg-home-lecture .index-schedule-type-lecuture { display: none; }
             .cg-home .cg-home-lecture .scheduleTitle {
@@ -1505,10 +1562,22 @@
         return response.blob();
     }
 
+    function installOtherPageDeadlineBackground(background) {
+        if (document.title !== "ホーム画面（学生・保護者）") {
+            const updateBackground = () => {
+                const now = Date.now();
+                background.render(cachedHomeDeadline(now) - now);
+            };
+            updateBackground();
+            setInterval(updateBackground, 1000);
+        }
+    }
+
     function startKawaiiGakujo() {
         console.log("[CG] startKawaiiGakujo (DOM ready)");
         installReferenceTimetableOrder();
         const pageBackground = installHeaderBackgroundSettings();
+        installOtherPageDeadlineBackground(pageBackground);
 
         const getHiddenTasks = () => {
             let hiddenTasks = [];
@@ -2017,12 +2086,12 @@
 
                     const statusCell = row.querySelector('td[data-label*="提出状況"]');
                     if (statusCell && statusCell.textContent.includes("提出済")) {
-                        row.style.backgroundColor = "rgba(229, 255, 229, .8)";
+                        row.style.backgroundColor = "rgba(229, 255, 229, .55)";
                         row.addEventListener('mouseover', () => {
-                            row.style.backgroundColor = "rgba(209, 255, 209, .9)";
+                            row.style.backgroundColor = "rgba(209, 255, 209, .7)";
                         });
                         row.addEventListener('mouseout', () => {
-                            row.style.backgroundColor = "rgba(229, 255, 229, .8)";
+                            row.style.backgroundColor = "rgba(229, 255, 229, .55)";
                         });
                     }
 

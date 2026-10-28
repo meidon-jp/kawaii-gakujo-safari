@@ -155,7 +155,7 @@
                             radial-gradient(ellipse at 60% 50%, #bb172c, #540b18 65%, #220910)) !important;
                     }
                     #cg-page-background[data-cg-deadline-urgency="nothing"] {
-                        background-image: var(--cg-header-nothing-image) !important;
+                        background-image: var(--cg-header-nothing-image, var(--cg-header-normal-image, none)) !important;
                     }
                     .cg-glass-content .c-container .c-box-shadow,
                     .cg-registration-page .stady-sec01-box > ul > li,
@@ -335,7 +335,10 @@
                     const properties = [];
                     for (const [state, key] of Object.entries(headerImageKeys)) {
                         const image = localStorage.getItem(key);
-                        if (image) properties.push(`${state === "normal" ? "background-image" : `--cg-header-${state}-image`}: url(${JSON.stringify(image)});`);
+                        if (image) {
+                            properties.push(`--cg-header-${state}-image: url(${JSON.stringify(image)});`);
+                            if (state === "normal") properties.push(`background-image: url(${JSON.stringify(image)});`);
+                        }
                     }
                     if (properties.length) style.textContent += `
                         #cg-page-background:not([data-cg-background-ready]) { ${properties.join("\n")} }
@@ -696,7 +699,7 @@
         if (!visual) return;
         const urgency = remaining > 0 && remaining < 86400000 ? "critical"
             : remaining > 0 && remaining < warningDays * 86400000 ? "warning"
-            : Number.isFinite(remaining) ? "" : "nothing";
+            : remaining === Infinity ? "nothing" : "";
         // Override only the presentation; the user's saved image stays untouched.
         if (urgency) {
             if (visual.dataset.cgDeadlineUrgency !== urgency) visual.dataset.cgDeadlineUrgency = urgency;
@@ -735,6 +738,8 @@
         const applyImages = () => {
             if (bg) {
                 bg.style.backgroundImage = settings.images.normal ? `url(${JSON.stringify(settings.images.normal)})` : defaultImage;
+                if (settings.images.normal) bg.style.setProperty("--cg-header-normal-image", `url(${JSON.stringify(settings.images.normal)})`);
+                else bg.style.removeProperty("--cg-header-normal-image");
                 bg.dataset.cgBackgroundReady = "1";
                 for (const state of ["warning", "critical", "nothing"]) {
                     const property = `--cg-header-${state}-image`;

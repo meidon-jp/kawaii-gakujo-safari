@@ -147,9 +147,9 @@ test('initial urgency uses current time and configured days, ignoring expired or
         [{ deadlines: [now - 1000, now + 3600000] }, 'critical'],
         [{ deadlines: [now + 2.5 * 86400000], warningDays: '4' }, 'warning'],
         [{ deadlines: [now + 2.5 * 86400000] }, undefined],
-        [{ deadlines: [now - 1000, 'invalid'] }, undefined],
+        [{ deadlines: [now - 1000, 'invalid'] }, 'nothing'],
         [{ deadlines: [now + 3600000], home: false }, 'critical'],
-        [{ blockedStorage: true }, undefined],
+        [{ blockedStorage: true }, 'nothing'],
     ]) {
         const state = earlyPage({ home: true, ready: true, ...options });
         state.context.installEarlyAppearance();

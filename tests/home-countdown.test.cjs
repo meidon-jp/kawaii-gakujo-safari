@@ -67,7 +67,7 @@ test('hundredths keep two digits and roll over correctly', () => {
 test('deadline background temporarily overrides and releases the saved image', () => {
     const visual = { dataset: {}, style: { backgroundImage: 'url(custom.png)' } };
     const day = 86400000;
-    for (const [remaining, expected] of [[3 * day, undefined], [3 * day - 1, 'warning'], [day, 'warning'], [day - 1, 'critical'], [0, undefined], [1000, 'critical'], [Infinity, undefined], [NaN, undefined]]) {
+    for (const [remaining, expected] of [[3 * day, undefined], [3 * day - 1, 'warning'], [day, 'warning'], [day - 1, 'critical'], [0, undefined], [1000, 'critical'], [Infinity, 'nothing'], [NaN, undefined]]) {
         context.updateDeadlineBackground(visual, remaining);
         assert.equal(visual.dataset.cgDeadlineUrgency, expected);
         assert.equal(visual.style.backgroundImage, 'url(custom.png)');

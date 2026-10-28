@@ -29,26 +29,27 @@ test('existing image becomes the normal background without rewriting saved data'
     assert.equal(state.controller.settings.images.normal, 'data:image/png;base64,old');
     assert.equal(state.bg.style.backgroundImage, 'url("data:image/png;base64,old")');
     assert.equal(state.values.size, 1);
-    assert.equal(state.properties.size, 0); // Unset warning images use the existing CSS patterns.
+    assert.equal(state.properties.get("--cg-header-normal-image"), 'url("data:image/png;base64,old")');
 });
 
-test('three backgrounds persist independently and survive reloading', () => {
+test('four backgrounds persist independently and survive reloading', () => {
     const state = setup();
-    for (const mode of ['normal', 'warning', 'critical']) state.controller.setImage(mode, `data:image/png;base64,${mode}`);
+    for (const mode of ['normal', 'warning', 'critical', 'nothing']) state.controller.setImage(mode, `data:image/png;base64,${mode}`);
     state.controller.setWarningDays(5);
     const reloaded = setup([...state.values]);
     assert.equal(reloaded.controller.settings.warningDays, 5);
-    for (const mode of ['normal', 'warning', 'critical']) {
+    for (const mode of ['normal', 'warning', 'critical', 'nothing']) {
         assert.equal(reloaded.controller.settings.images[mode], `data:image/png;base64,${mode}`);
     }
     assert.equal(reloaded.properties.get('--cg-header-warning-image'), 'url("data:image/png;base64,warning")');
     assert.equal(reloaded.properties.get('--cg-header-critical-image'), 'url("data:image/png;base64,critical")');
+    assert.equal(reloaded.properties.get('--cg-header-nothing-image'), 'url("data:image/png;base64,nothing")');
 });
 
 test('custom day threshold has exact boundaries and under-one-day takes priority', () => {
     const { controller, visual } = setup();
     controller.setWarningDays(7);
-    for (const [remaining, expected] of [[7 * day, undefined], [7 * day - 1, 'warning'], [day, 'warning'], [day - 1, 'critical'], [0, undefined], [-1, undefined], [Infinity, undefined], [NaN, undefined]]) {
+    for (const [remaining, expected] of [[7 * day, undefined], [7 * day - 1, 'warning'], [day, 'warning'], [day - 1, 'critical'], [0, undefined], [-1, undefined], [Infinity, 'nothing'], [NaN, undefined]]) {
         controller.render(remaining);
         assert.equal(visual.dataset.cgDeadlineUrgency, expected, String(remaining));
     }
@@ -69,6 +70,19 @@ test('reset removes only the selected background and restores its default', () =
     controller.setImage('normal', '');
     assert.equal(bg.style.backgroundImage, '');
     assert.equal(values.get('cg-header-image-critical'), 'critical');
+});
+
+test('all-submitted background falls back to the saved normal image when reset', () => {
+    const { controller, properties } = setup();
+    controller.setImage('normal', 'normal');
+    controller.setImage('nothing', 'complete');
+    controller.render(Infinity);
+    assert.equal(properties.get('--cg-header-normal-image'), 'url("normal")');
+    assert.equal(properties.get('--cg-header-nothing-image'), 'url("complete")');
+    controller.setImage('nothing', '');
+    assert.equal(properties.has('--cg-header-nothing-image'), false);
+    assert.equal(properties.get('--cg-header-normal-image'), 'url("normal")');
+    assert.match(source, /var\(--cg-header-nothing-image, var\(--cg-header-normal-image, none\)\)/);
 });
 
 test('invalid days cannot overwrite a valid setting; invalid saved days use three', () => {
@@ -150,8 +164,8 @@ test('settings panel selects, saves and resets each image and updates n', async 
     assert.equal(panel.hidden, false);
     assert.equal(toggle.attributes['aria-expanded'], 'true');
     const rows = elements.filter(node => node.className === 'cg-header-image-row');
-    assert.equal(rows.length, 3);
-    for (const [index, key] of ['cg-header-image', 'cg-header-image-warning', 'cg-header-image-critical'].entries()) {
+    assert.equal(rows.length, 4);
+    for (const [index, key] of ['cg-header-image', 'cg-header-image-warning', 'cg-header-image-critical', 'cg-header-image-nothing'].entries()) {
         const input = rows[index].children[2].children[2];
         assert.equal(input.accept, 'image/*');
         input.files = [{ name: 'background.png' }];

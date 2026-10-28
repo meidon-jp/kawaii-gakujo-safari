@@ -293,9 +293,9 @@ for (const [urgency, hours] of [['warning', 36], ['critical', 12]]) {
         assert.deepEqual(transitions, [urgency, urgency], 'normal must never appear between cached and live deadlines');
         assert.deepEqual(cacheWrites, [[text], [text]]);
 
-        items = []; // A completed empty response must still restore the normal background.
+        items = []; // A completed empty response selects the all-submitted background.
         tick();
-        assert.equal(visual.dataset.cgDeadlineUrgency, undefined);
+        assert.equal(visual.dataset.cgDeadlineUrgency, 'nothing');
         assert.deepEqual(cacheWrites.at(-1), []);
     });
 }

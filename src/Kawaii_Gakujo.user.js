@@ -46,6 +46,16 @@
     const version = "1.13.0";
     const updateURL = "https://raw.githubusercontent.com/meidon-jp/kawaii-gakujo-safari/main/src/Kawaii_Gakujo.user.js";
 
+    function suppressGenericPortalAlert(target) {
+        const originalAlert = target.alert;
+        target.alert = function (message) {
+            if (message === "共通のエラー処理です") return;
+            return Reflect.apply(originalAlert, this, arguments);
+        };
+    }
+
+    if (location.hostname === "gakujo.shizuoka.ac.jp") suppressGenericPortalAlert(window);
+
     function waitForSelector(selector, timeout = 10000) {
         const existing = document.querySelector(selector);
         if (existing) return Promise.resolve(existing);
@@ -66,20 +76,26 @@
     }
 
     function cachedHomeDeadline(now) {
-        try {
-            const deadlines = JSON.parse(sessionStorage.getItem("cg-home-deadlines"));
-            if (Array.isArray(deadlines)) return deadlines.filter(value => Number.isFinite(value) && value > now)
-                .reduce((nearest, value) => Math.min(nearest, value), Infinity);
-        } catch (error) { console.debug("[CG] 前回の締め切りを読み込めませんでした", error); }
+        // Prefer the shared cache so other tabs follow the latest home page; fall back to older tab-local data.
+        for (const getStorage of [() => localStorage, () => sessionStorage]) {
+            try {
+                const deadlines = JSON.parse(getStorage().getItem("cg-home-deadlines"));
+                if (Array.isArray(deadlines)) return deadlines.filter(value => Number.isFinite(value) && value > now)
+                    .reduce((nearest, value) => Math.min(nearest, value), Infinity);
+            } catch (error) { console.debug("[CG] 前回の締め切りを読み込めませんでした", error); }
+        }
         return Infinity;
     }
 
     function cacheHomeDeadlines(texts) {
-        // Keep only timestamps in this tab; current task data corrects them on every home visit.
-        try {
-            const value = JSON.stringify(texts.map(homeTaskDeadline).filter(Number.isFinite));
-            if (sessionStorage.getItem("cg-home-deadlines") !== value) sessionStorage.setItem("cg-home-deadlines", value);
-        } catch (error) { console.debug("[CG] 締め切りの一時保存を省略", error); }
+        // Save only timestamps, never assignment names; refresh from home after each completed response.
+        const value = JSON.stringify(texts.map(homeTaskDeadline).filter(Number.isFinite));
+        for (const getStorage of [() => localStorage, () => sessionStorage]) {
+            try {
+                const storage = getStorage();
+                if (storage.getItem("cg-home-deadlines") !== value) storage.setItem("cg-home-deadlines", value);
+            } catch (error) { console.debug("[CG] 締め切りの保存を省略", error); }
+        }
     }
 
     function installEarlyAppearance() {
@@ -294,6 +310,17 @@
                     :is(.cg-grade-info-page, .cg-credit-info-page) .c-half-btn { background-color: rgba(255, 255, 255, .5); border-color: #52617436; }
                     :is(.cg-grade-info-page, .cg-credit-info-page) .c-heading-h3 { color: #34445b; }
                     .cg-grade-info-page .seiseki-marker-contents-body { flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+                    .cg-credit-info-page .c-expand:has(#requirementTypeCode) {
+                        background: rgba(255, 255, 255, .76); border: 1px solid #ffffff8c; border-radius: 18px;
+                        box-shadow: 0 8px 32px #18253b12; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+                    }
+                    .cg-credit-info-page .c-expand:has(#requirementTypeCode) .c-heading-container {
+                        border: 0; border-bottom: 1px solid #52617424;
+                    }
+                    .cg-credit-info-page .c-expand:has(#requirementTypeCode) > .c-box-shadow {
+                        background: transparent; border: 0; border-radius: 0; box-shadow: none;
+                        -webkit-backdrop-filter: none; backdrop-filter: none;
+                    }
                     .cg-credit-info-page .c-table tbody tr.SC_10004B00_02_toggle { background-color: rgba(231, 239, 255, .55) !important; }
                     .cg-credit-info-page .c-table tbody tr.SC_10004B00_02_toggle:hover { background-color: rgba(231, 239, 255, .7) !important; }
                     .cg-task-detail .fileList .preview {
@@ -1685,6 +1712,9 @@
             };
             updateBackground();
             setInterval(updateBackground, 1000);
+            window.addEventListener("storage", event => {
+                if (event.key === "cg-home-deadlines") updateBackground();
+            });
         }
     }
 

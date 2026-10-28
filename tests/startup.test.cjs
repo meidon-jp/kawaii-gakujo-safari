@@ -7,6 +7,19 @@ const helpers = source.slice(source.indexOf('    function waitForSelector('), so
 const backgroundHelpers = source.slice(source.indexOf('    function homeTaskDeadline('), source.indexOf('    function createHeaderBackgroundController('));
 const otherPageBackground = source.slice(source.indexOf('    function installOtherPageDeadlineBackground('), source.indexOf('    function startKawaiiGakujo('));
 
+test('only the generic portal alert is suppressed', () => {
+    const calls = [];
+    const target = { alert(...args) { calls.push({ receiver: this, args }); return 'shown'; } };
+    const context = vm.createContext({ window: target, location: { hostname: 'gakujo.shizuoka.ac.jp' } });
+    vm.runInContext(source.slice(source.indexOf('    function suppressGenericPortalAlert('), source.indexOf('    function waitForSelector(')), context);
+    assert.equal(target.alert('共通のエラー処理です'), undefined);
+    assert.equal(calls.length, 0);
+    assert.equal(target.alert('共通のエラー処理です。'), 'shown');
+    assert.equal(target.alert('別のエラー'), 'shown');
+    assert.deepEqual(calls.map(call => call.args[0]), ['共通のエラー処理です。', '別のエラー']);
+    assert.equal(calls[0].receiver, target);
+});
+
 test('existing elements are ready without a polling or stabilization delay', async () => {
     const node = {};
     const context = vm.createContext({ document: { querySelector: () => node },
@@ -159,19 +172,23 @@ test('initial urgency uses current time and configured days, ignoring expired or
 
 test('other pages follow cached deadlines as time passes, including the next deadline', () => {
     const day = 86400000;
-    let now = 100 * day, tick;
+    let now = 100 * day, tick, storageEvent;
     const deadlines = [now + 1000, now + 4 * day];
     const rendered = [];
     const context = vm.createContext({
         document: { title: '課題・アンケートリスト' },
         Date: { now: () => now },
         sessionStorage: { getItem: () => JSON.stringify(deadlines) },
+        window: { addEventListener(name, callback) { assert.equal(name, 'storage'); storageEvent = callback; } },
         setInterval(callback, delay) { assert.equal(delay, 1000); tick = callback; },
         console,
     });
     vm.runInContext(helpers + otherPageBackground, context);
     context.installOtherPageDeadlineBackground({ render: remaining => rendered.push(remaining) });
     assert.equal(rendered.at(-1), 1000);
+    deadlines[0] = now + 500;
+    storageEvent({ key: 'cg-home-deadlines' });
+    assert.equal(rendered.at(-1), 500);
     now += 2000;
     tick();
     assert.equal(rendered.at(-1), 4 * day - 2000);
@@ -196,4 +213,20 @@ test('deadline cache stores timestamps only, updates changed data and clears com
     assert.equal(writes, 1);
     context.cacheHomeDeadlines([]);
     assert.equal(stored, '[]');
+});
+
+test('home deadlines are shared across tabs and take precedence over old tab-local data', () => {
+    const shared = new Map(), firstTab = new Map(), secondTab = new Map();
+    const storage = map => ({ getItem: key => map.get(key) ?? null, setItem: (key, value) => map.set(key, value) });
+    const create = session => {
+        const context = vm.createContext({ console, localStorage: storage(shared), sessionStorage: storage(session) });
+        vm.runInContext(backgroundHelpers + helpers, context);
+        return context;
+    };
+    const home = create(firstTab), other = create(secondTab);
+    secondTab.set('cg-home-deadlines', JSON.stringify([1]));
+    home.cacheHomeDeadlines(['締切 2026/10/30 18:00']);
+    assert.equal(other.cachedHomeDeadline(0), Date.parse('2026-10-30T18:00:00+09:00'));
+    home.cacheHomeDeadlines([]);
+    assert.equal(other.cachedHomeDeadline(0), Infinity);
 });

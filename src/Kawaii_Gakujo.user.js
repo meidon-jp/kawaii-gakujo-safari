@@ -157,7 +157,10 @@
                     .cg-page-appearance .c-main-menu .c-gnav-children-link:hover,
                     .cg-page-appearance .c-main-menu .c-gnav-children-link:focus-visible { background-color: #52617414 !important; }
                     .cg-page-appearance #cg-sidebar a:hover,
-                    .cg-page-appearance #cg-sidebar a:focus-visible { background-image: linear-gradient(#52617414, #52617414); }
+                    .cg-page-appearance #cg-sidebar a:focus-visible {
+                        background-image: linear-gradient(#52617414, #52617414);
+                        background-position: 0 0; background-size: 100% 100%;
+                    }
                     #cg-page-background {
                         position: fixed; inset: 0; z-index: -1; pointer-events: none;
                         background-color: #eef1f4; background-position: center; background-size: cover; background-repeat: no-repeat;
@@ -329,7 +332,9 @@
                     .cg-task-detail .lcu-dropzone {
                         background-color: rgba(255, 255, 255, .55); border-color: #52617436; border-radius: 10px;
                     }
-                    .cg-page-appearance .c-header-information-popup {
+                    .cg-page-appearance .c-header-information-popup,
+                    .cg-page-appearance .c-header-user-menu-popup,
+                    .cg-page-appearance .c-header-campuslink-popup {
                         background: rgba(255, 255, 255, .76); border: 1px solid #ffffff8c; border-radius: 18px;
                         box-shadow: 0 8px 32px #18253b12; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
                     }

@@ -313,14 +313,17 @@
                     :is(.cg-grade-info-page, .cg-credit-info-page) .c-half-btn { background-color: rgba(255, 255, 255, .5); border-color: #52617436; }
                     :is(.cg-grade-info-page, .cg-credit-info-page) .c-heading-h3 { color: #34445b; }
                     .cg-grade-info-page .seiseki-marker-contents-body { flex-wrap: wrap; gap: 12px; align-items: flex-start; }
-                    .cg-credit-info-page .c-expand:has(#requirementTypeCode) {
+                    :is(.cg-credit-info-page .c-expand:has(#requirementTypeCode),
+                        .cg-grade-info-page .c-expand:has(.seiseki-marker-contents-body)) {
                         background: rgba(255, 255, 255, .76); border: 1px solid #ffffff8c; border-radius: 18px;
                         box-shadow: 0 8px 32px #18253b12; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
                     }
-                    .cg-credit-info-page .c-expand:has(#requirementTypeCode) .c-heading-container {
+                    :is(.cg-credit-info-page .c-expand:has(#requirementTypeCode),
+                        .cg-grade-info-page .c-expand:has(.seiseki-marker-contents-body)) .c-heading-container {
                         border: 0; border-bottom: 1px solid #52617424;
                     }
-                    .cg-credit-info-page .c-expand:has(#requirementTypeCode) > .c-box-shadow {
+                    :is(.cg-credit-info-page .c-expand:has(#requirementTypeCode),
+                        .cg-grade-info-page .c-expand:has(.seiseki-marker-contents-body)) > .c-box-shadow {
                         background: transparent; border: 0; border-radius: 0; box-shadow: none;
                         -webkit-backdrop-filter: none; backdrop-filter: none;
                     }

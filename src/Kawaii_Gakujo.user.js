@@ -154,6 +154,9 @@
                         background-image: var(--cg-header-critical-image, repeating-linear-gradient(135deg, transparent 0 32px, rgba(255, 60, 60, .2) 32px 64px),
                             radial-gradient(ellipse at 60% 50%, #bb172c, #540b18 65%, #220910)) !important;
                     }
+                    #cg-page-background[data-cg-deadline-urgency="nothing"] {
+                        background-image: var(--cg-header-nothing-image) !important;
+                    }
                     .cg-glass-content .c-container .c-box-shadow,
                     .cg-registration-page .stady-sec01-box > ul > li,
                     .cg-registration-page .stady-sec02-contents,
@@ -655,7 +658,8 @@
     function updateDeadlineBackground(visual, remaining, warningDays = 3) {
         if (!visual) return;
         const urgency = remaining > 0 && remaining < 86400000 ? "critical"
-            : remaining > 0 && remaining < warningDays * 86400000 ? "warning" : "";
+            : remaining > 0 && remaining < warningDays * 86400000 ? "warning"
+            : Number.isFinite(remaining) ? "" : "nothing";
         // Override only the presentation; the user's saved image stays untouched.
         if (urgency) {
             if (visual.dataset.cgDeadlineUrgency !== urgency) visual.dataset.cgDeadlineUrgency = urgency;
@@ -667,7 +671,8 @@
     const headerImageKeys = {
         normal: "cg-header-image",
         warning: "cg-header-image-warning",
-        critical: "cg-header-image-critical"
+        critical: "cg-header-image-critical",
+        nothing: "cg-header-image-nothing"
     };
 
     function validHeaderWarningDays(value) {
@@ -676,7 +681,7 @@
     }
 
     function createHeaderBackgroundController(visual, storage) {
-        const settings = { warningDays: 3, images: { normal: "", warning: "", critical: "" } };
+        const settings = { warningDays: 3, images: { normal: "", warning: "", critical: "", nothing: "" } };
         try {
             if (storage) {
                 settings.warningDays = validHeaderWarningDays(storage.getItem("cg-header-warning-days")) ?? 3;
@@ -694,7 +699,7 @@
             if (bg) {
                 bg.style.backgroundImage = settings.images.normal ? `url(${JSON.stringify(settings.images.normal)})` : defaultImage;
                 bg.dataset.cgBackgroundReady = "1";
-                for (const state of ["warning", "critical"]) {
+                for (const state of ["warning", "critical", "nothing"]) {
                     const property = `--cg-header-${state}-image`;
                     if (settings.images[state]) bg.style.setProperty(property, `url(${JSON.stringify(settings.images[state])})`);
                     else bg.style.removeProperty(property);
@@ -1448,7 +1453,7 @@
         panel.appendChild(note);
 
         const labels = new Map();
-        for (const [state, label] of [["normal", "通常時"], ["warning", `${background.settings.warningDays}日未満`], ["critical", "1日未満"]]) {
+        for (const [state, label] of [["normal", "通常時"], ["warning", `${background.settings.warningDays}日未満`], ["critical", "1日未満"], ["nothing", "すべて提出済み"]]) {
             const row = document.createElement("div");
             row.className = "cg-header-image-row";
             const caption = document.createElement("strong");

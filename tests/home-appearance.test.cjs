@@ -72,6 +72,58 @@ test('grade loading indicator is cleared only for a completed dashboard document
     assert.equal(classes.has('cg-grade-frame-ready'), true);
 });
 
+test('embedded charts redraw at display density and the frame follows the resulting content height', () => {
+    const context = frameContext();
+    let width = 800, height = 600, redraws = 0;
+    const chart = { options: { responsive: false, maintainAspectRatio: true },
+        canvas: { closest: () => ({}) }, resize() { redraws++; height = 361.25; } };
+    const modalChart = { options: { maintainAspectRatio: true }, canvas: { closest: () => null },
+        resize() { assert.fail('hidden enlarged charts resize when the native modal opens'); } };
+    const doc = { getElementById: () => ({ getBoundingClientRect: () => ({ height }) }),
+        defaultView: { devicePixelRatio: 3, Chart: { instances: { chart, modalChart } } } };
+    const frame = { contentDocument: doc, style: { height: '600px' }, getBoundingClientRect: () => ({ width }) };
+    context.resizeHomeGradeFrame(frame, doc);
+    assert.equal(frame.style.height, '362px');
+    assert.equal(chart.options.responsive, true);
+    assert.equal(chart.options.maintainAspectRatio, false);
+    assert.equal(chart.options.devicePixelRatio, 3);
+    assert.equal(modalChart.options.devicePixelRatio, 3);
+    assert.equal(modalChart.options.maintainAspectRatio, true);
+    width = 0;
+    context.resizeHomeGradeFrame(frame, doc);
+    assert.equal(redraws, 1, 'collapsed frames keep their last size');
+    width = 800;
+    doc.defaultView.devicePixelRatio = 1.7;
+    context.resizeHomeGradeFrame(frame, doc);
+    assert.equal(chart.options.devicePixelRatio, 2, 'reduced page zoom still gets a sharp backing canvas');
+    frame.contentDocument = {};
+    context.resizeHomeGradeFrame(frame, doc);
+    assert.equal(redraws, 2, 'old resize callbacks cannot modify a replacement document');
+});
+
+test('grade layout observes content once and batches resize callbacks in one animation frame', () => {
+    const context = frameContext(), styles = [], pending = [];
+    let observes = 0, notify, resize;
+    const contents = { getBoundingClientRect: () => ({ height: 244.2 }) };
+    const doc = { head: { appendChild: style => styles.push(style) }, createElement: () => ({}),
+        getElementById: id => id === 'dashBoards' ? contents : styles.find(style => style.id === id),
+        defaultView: { requestAnimationFrame: callback => pending.push(callback),
+            addEventListener(type, callback) { assert.equal(type, 'resize'); resize = callback; },
+            ResizeObserver: class { constructor(callback) { notify = callback; }
+                observe(target) { assert.equal(target, contents); observes++; } } } };
+    const frame = { src: '/lcu-web/SC_01002B00_01/recordDashBoard', contentDocument: doc,
+        style: {}, getBoundingClientRect: () => ({ width: 800 }) };
+    context.styleHomeGradeFrame(frame);
+    context.styleHomeGradeFrame(frame);
+    notify(); resize();
+    assert.equal(observes, 1);
+    assert.equal(pending.length, 1);
+    pending.shift()();
+    assert.equal(frame.style.height, '245px');
+    notify();
+    assert.equal(pending.length, 1, 'later content changes schedule another measurement');
+});
+
 function disclosureFixture() {
     let observer, resizes = 0, nativeClicks = 0;
     const classes = new Set(['c-btn-toggle', 'js-accordion', 'is-open']);

@@ -264,6 +264,35 @@
                     }
                     .cg-registration-page .stady-sec01-box .right > p,
                     .cg-registration-page .c-half-btn { background-color: rgba(255, 255, 255, .5) !important; border-color: #52617436; }
+                    .cg-grade-dashboard-page .c-chart-list-item-container {
+                        background-color: rgba(255, 255, 255, .4); border: 1px solid #52617430; border-radius: 10px;
+                    }
+                    .cg-grade-dashboard-page .modaal-container:has(.c-modal-content) {
+                        background-color: rgba(255, 255, 255, .76); border: 1px solid #ffffff8c; border-radius: 18px;
+                        box-shadow: 0 8px 32px #18253b12; box-sizing: border-box;
+                        -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+                    }
+                    .cg-grade-dashboard-page .c-table :is(th, td) { border-color: #52617436; }
+                    .cg-grade-dashboard-page .c-table th:not(.c-design-theme-palettet-item) {
+                        background-color: rgba(255, 255, 255, .36); color: #34445b;
+                    }
+                    .cg-grade-dashboard-page .c-table tbody tr { background-color: rgba(255, 255, 255, .12) !important; }
+                    .cg-grade-dashboard-page .c-table tbody tr:hover { background-color: rgba(255, 255, 255, .3) !important; }
+                    .cg-grade-dashboard-page .c-table .c-design-theme-palettet-item.-blue04 { background-color: rgba(231, 239, 255, .55) !important; }
+                    .cg-grade-dashboard-page .c-table .c-design-theme-palettet-item.-blue05 { background-color: rgba(242, 246, 255, .55) !important; }
+                    .cg-grade-dashboard-page .c-table .c-design-theme-palettet-item.-orange03 { background-color: rgba(249, 239, 226, .55) !important; }
+                    :is(.cg-grade-info-page, .cg-credit-info-page) .c-table :is(th, td) { border-color: #52617436; }
+                    :is(.cg-grade-info-page, .cg-credit-info-page) .c-table th {
+                        background-color: rgba(255, 255, 255, .36) !important; color: #34445b;
+                    }
+                    /* Keep the portal's yellow intermediate-score backgrounds on individual cells. */
+                    :is(.cg-grade-info-page, .cg-credit-info-page) .c-table tbody tr { background-color: rgba(255, 255, 255, .12) !important; }
+                    :is(.cg-grade-info-page, .cg-credit-info-page) .c-table tbody tr:hover { background-color: rgba(255, 255, 255, .3) !important; }
+                    :is(.cg-grade-info-page, .cg-credit-info-page) .c-half-btn { background-color: rgba(255, 255, 255, .5); border-color: #52617436; }
+                    :is(.cg-grade-info-page, .cg-credit-info-page) .c-heading-h3 { color: #34445b; }
+                    .cg-grade-info-page .seiseki-marker-contents-body { flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+                    .cg-credit-info-page .c-table tbody tr.SC_10004B00_02_toggle { background-color: rgba(231, 239, 255, .55) !important; }
+                    .cg-credit-info-page .c-table tbody tr.SC_10004B00_02_toggle:hover { background-color: rgba(231, 239, 255, .7) !important; }
                     .cg-task-detail .fileList .preview {
                         background-color: rgba(255, 255, 255, .36); border-radius: 8px;
                     }
@@ -318,12 +347,18 @@
             const referencePage = document.title.includes("授業参考情報");
             const syllabusPage = document.title.includes("シラバス");
             const registrationPage = document.title === "履修登録";
-            if (referencePage || syllabusPage || registrationPage || ["課題・アンケートリスト", "課題・アンケート提出", "課題・アンケート詳細", "連絡一覧", "連絡詳細"].includes(document.title)) {
+            const gradeDashboardPage = document.title === "成績ダッシュボード";
+            const gradeInfoPage = ["成績情報", "成績情報詳細"].includes(document.title);
+            const creditInfoPage = document.title === "単位修得情報";
+            if (referencePage || syllabusPage || registrationPage || gradeDashboardPage || gradeInfoPage || creditInfoPage || ["課題・アンケートリスト", "課題・アンケート提出", "課題・アンケート詳細", "連絡一覧", "連絡詳細"].includes(document.title)) {
                 document.documentElement.classList.add("cg-glass-content");
             }
             if (referencePage) document.documentElement.classList.add("cg-reference-page");
             if (syllabusPage) document.documentElement.classList.add("cg-syllabus-page");
             if (registrationPage) document.documentElement.classList.add("cg-registration-page");
+            if (gradeDashboardPage) document.documentElement.classList.add("cg-grade-dashboard-page");
+            if (gradeInfoPage) document.documentElement.classList.add("cg-grade-info-page");
+            if (creditInfoPage) document.documentElement.classList.add("cg-credit-info-page");
             if (["課題・アンケート提出", "課題・アンケート詳細"].includes(document.title)) document.documentElement.classList.add("cg-task-detail");
             if (["連絡一覧", "連絡詳細"].includes(document.title)) document.documentElement.classList.add("cg-notice-page");
             if (!document.getElementById("cg-page-background")) {
@@ -346,11 +381,13 @@
     }
 
     // Check existing content as well as future mutations.
-    function observeUntilReady(check) {
+    function observeUntilReady(check, attributeFilter = []) {
         const observer = new MutationObserver(() => {
             if (check()) observer.disconnect();
         });
-        observer.observe(document.body, { childList: true, subtree: true });
+        const options = { childList: true, subtree: true };
+        if (attributeFilter.length) Object.assign(options, { attributes: true, attributeFilter });
+        observer.observe(document.body, options);
         if (check()) observer.disconnect();
     }
 
@@ -1035,13 +1072,41 @@
                 }
                 html {
                     min-width: calc((100vw + 1px) / var(--cg-grade-frame-scale, 1));
-                    min-height: calc((100vh + 1px) / var(--cg-grade-frame-scale, 1));
+                    min-height: calc((100vh + 1px) / var(--cg-grade-frame-scale, 1)); height: auto !important;
+                }
+                body { min-height: 0 !important; height: auto !important; }
+                #dashBoards { width: 100%; height: auto !important; }
+                .dashboard_box { padding: 0 !important; }
+                .graphList {
+                    display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 12px; margin: 0 !important;
+                }
+                .graphList_item {
+                    width: auto !important; min-width: 0; margin: 0 !important; padding: 12px !important;
+                    box-sizing: border-box; background-color: rgba(255, 255, 255, .4) !important;
+                    border: 1px solid #0000001a; border-radius: 10px;
+                }
+                .graphList_item:has(.attendanceRate) { grid-column: 1 / -1; }
+                .graphList_item .c-chart-list-canvas {
+                    width: 100% !important; height: 300px !important; margin: 0 !important;
+                }
+                .graphList_item .c-chart-list-canvas canvas { width: 100% !important; height: 100% !important; }
+                .attendanceRate { padding: 0 !important; }
+                .attendanceRate .c-expands { margin: 0 !important; }
+                .modaal-container:has(.c-modal-content) {
+                    background-color: rgba(255, 255, 255, .76); border: 1px solid #ffffff8c; border-radius: 18px;
+                    box-shadow: 0 8px 32px #18253b12; box-sizing: border-box;
+                    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+                }
+                @media screen and (max-width: 640px) {
+                    .graphList { grid-template-columns: 1fr; }
+                    .graphList_item .c-chart-list-canvas { height: 260px !important; }
                 }
             `;
                 doc.head.appendChild(style);
             }
             // At reduced Safari page zoom, the root's transparent canvas can be
-            // smaller than its iframe. Cover the viewport, including rounded edges.
+            // smaller than its iframe. Cover the viewport; size the iframe from its contents, not this root.
             const root = doc.documentElement;
             if (root && doc.defaultView) {
                 const layoutWidth = parseFloat(doc.defaultView.getComputedStyle(root).width);
@@ -1053,7 +1118,46 @@
             if (doc.readyState === "complete" && doc.getElementById("dashBoards")) {
                 frame.closest("#dashboard")?.classList.add("cg-grade-frame-ready");
             }
+            const contents = doc.getElementById("dashBoards");
+            const style = doc.getElementById("cg-home-grade-glass");
+            const view = doc.defaultView;
+            if (style && contents?.getBoundingClientRect && view?.requestAnimationFrame) {
+                if (!style.cgGradeLayout) {
+                    let pending = false;
+                    const schedule = () => {
+                        if (pending) return;
+                        pending = true;
+                        view.requestAnimationFrame(() => {
+                            pending = false;
+                            resizeHomeGradeFrame(frame, doc);
+                        });
+                    };
+                    style.cgGradeLayout = schedule;
+                    if (view.ResizeObserver) new view.ResizeObserver(schedule).observe(contents);
+                    view.addEventListener("resize", schedule);
+                }
+                style.cgGradeLayout();
+            }
         } catch (error) { console.debug("[CG] 成績パネルの背景調整を省略", error); }
+    }
+
+    function resizeHomeGradeFrame(frame, doc) {
+        try {
+            const contents = doc.getElementById("dashBoards");
+            // Hidden frames have no usable layout; keep their last dimensions until opened.
+            if (frame.contentDocument !== doc || !contents || frame.getBoundingClientRect().width <= 0) return;
+            const view = doc.defaultView;
+            for (const chart of Object.values(view.Chart?.instances || {})) {
+                chart.options.devicePixelRatio = Math.max(2, view.devicePixelRatio || 1);
+                if (chart.canvas.closest("#dashBoards")) {
+                    chart.options.responsive = true;
+                    chart.options.maintainAspectRatio = false;
+                    chart.resize();
+                }
+            }
+            const height = Math.ceil(contents.getBoundingClientRect().height);
+            if (height > 0 && frame.style.height !== `${height}px`) frame.style.height = `${height}px`;
+        } catch (error) { console.debug("[CG] 成績グラフの再描画を省略", error); }
     }
 
     function installHomeGradeDisclosure() {
@@ -1271,6 +1375,7 @@
             .cg-home .cg-grade-toggle:focus-visible { outline: 2px solid #536174; outline-offset: 3px; }
             .cg-home #dashboard.cg-grade-collapsed #recordDashBoardReading,
             .cg-home #dashboard.cg-grade-frame-ready #recordDashBoardReading { display: none !important; }
+            .cg-home #dashboard iframe { display: block; width: 100%; border: 0; }
             .cg-home .index-container .scheduleList,
             .cg-home .index-container dd.content { background-color: transparent !important; }
             .cg-home .index-container .scheduleList_item,
@@ -2289,14 +2394,14 @@
 
             function initYearSemesterFilter() {
                 const table = document.getElementById("02");
-                if (!table) return;
+                if (!table) return false;
 
                 const upper = document.getElementsByClassName("seiseki-marker-contents-body")[0];
-                if (!upper) return;
-                if (document.getElementById("cg-year-semester-box")) return;
+                if (!upper) return false;
+                if (document.getElementById("cg-year-semester-box")) return true;
 
                 const { years, yearSemesters } = collectYearSemesters();
-                if (years.length === 0) return;
+                if (years.length === 0) return false;
 
                 upper.style.display = "flex";
                 upper.style.justifyContent = "space-between";
@@ -2342,6 +2447,7 @@
                 }
 
                 console.log("[CG] Year/Semester filter initialized");
+                return true;
             }
 
             observeUntilReady(() => {
@@ -2349,7 +2455,7 @@
                 const tbody = table?.querySelector("tbody tr");
                 if (table && tbody) {
                     if (!document.getElementsByClassName("seiseki-marker-contents-body")[0]) return false;
-                    initYearSemesterFilter();
+                    if (!initYearSemesterFilter()) return false;
                     void checkGradeUpdates();
                     const reportDate = document.getElementById("reportDate");
                     if (reportDate) {
@@ -2358,7 +2464,7 @@
                     return true;
                 }
                 return false;
-            });
+            }, ["data-label"]);
         } else if (document.title === "連絡一覧") {
             const cPageNation = document.getElementsByClassName("c-pagination")[0];
             if (cPageNation) {

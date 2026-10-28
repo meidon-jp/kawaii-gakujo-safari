@@ -29,6 +29,23 @@ test('later elements initialize on their first mutation and release the timeout'
     assert.equal(cleared, true);
 });
 
+test('attribute-dependent initialization waits for labels and disconnects only when ready', () => {
+    let ready = false, notify, observed, disconnected = false;
+    const context = vm.createContext({ document: { body: {} },
+        MutationObserver: class { constructor(callback) { notify = callback; }
+            observe(target, options) { observed = options; }
+            disconnect() { disconnected = true; } } });
+    vm.runInContext(source.slice(source.indexOf('    function observeUntilReady('), source.indexOf('    let initializationStarted')), context);
+    context.observeUntilReady(() => ready, ['data-label']);
+    assert.equal(observed.attributes, true);
+    assert.deepEqual([...observed.attributeFilter], ['data-label']);
+    notify();
+    assert.equal(disconnected, false, 'rows without their report-date labels are not ready');
+    ready = true;
+    notify();
+    assert.equal(disconnected, true);
+});
+
 function earlyPage({ embedded = false, hostname = 'gakujo.shizuoka.ac.jp', ready = false,
     home = false, deadlines = [], warningDays = '2', blockedStorage = false } = {}) {
     const nodes = new Map();
@@ -82,7 +99,7 @@ test('background never modifies SSO or embedded pages', () => {
 });
 
 test('glass content styles are limited to supported portal pages', () => {
-    for (const [title, glass, taskDetail, notice, reference = false, syllabus = false, registration = false] of [
+    for (const [title, glass, taskDetail, notice, reference = false, syllabus = false, registration = false, gradeDashboard = false, gradeInfo = false, creditInfo = false] of [
         ['課題・アンケートリスト', true, false, false],
         ['課題・アンケート提出', true, true, false],
         ['課題・アンケート詳細', true, true, false],
@@ -93,7 +110,10 @@ test('glass content styles are limited to supported portal pages', () => {
         ['シラバス検索', true, false, false, false, true],
         ['シラバス詳細', true, false, false, false, true],
         ['ホーム画面（学生・保護者）', false, false, false],
-        ['成績情報', false, false, false],
+        ['成績情報', true, false, false, false, false, false, false, true],
+        ['成績情報詳細', true, false, false, false, false, false, false, true],
+        ['単位修得情報', true, false, false, false, false, false, false, false, true],
+        ['成績ダッシュボード', true, false, false, false, false, false, true],
         ['履修登録', true, false, false, false, false, true],
     ]) {
         const state = earlyPage({ ready: true });
@@ -105,6 +125,9 @@ test('glass content styles are limited to supported portal pages', () => {
         assert.equal(state.classes.has('cg-reference-page'), reference, title);
         assert.equal(state.classes.has('cg-syllabus-page'), syllabus, title);
         assert.equal(state.classes.has('cg-registration-page'), registration, title);
+        assert.equal(state.classes.has('cg-grade-dashboard-page'), gradeDashboard, title);
+        assert.equal(state.classes.has('cg-grade-info-page'), gradeInfo, title);
+        assert.equal(state.classes.has('cg-credit-info-page'), creditInfo, title);
     }
 });
 

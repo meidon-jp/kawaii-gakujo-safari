@@ -2628,6 +2628,21 @@
                         wrapper.style.maxWidth = "100%";
                         wrapper.appendChild(image);
                     } else {
+                        if (type === "application/pdf") {
+                            const openPdf = document.createElement("a");
+                            openPdf.href = url;
+                            openPdf.target = "_blank";
+                            openPdf.rel = "noopener noreferrer";
+                            openPdf.textContent = "PDFを別タブで開く";
+                            openPdf.style.display = "inline-block";
+                            openPdf.style.margin = "12px 16px";
+                            openPdf.style.padding = "8px 16px";
+                            openPdf.style.borderRadius = "999px";
+                            openPdf.style.background = "rgba(255, 255, 255, 0.9)";
+                            openPdf.style.border = "1px solid rgba(196, 166, 205, 0.65)";
+                            openPdf.style.color = "#674f70";
+                            wrapper.insertBefore(openPdf, iframe);
+                        }
                         iframe.src = url;
                     }
                 };

@@ -193,3 +193,12 @@ test('preview detects attachments added after startup without duplicating them',
     assert.equal(state.requests.length, 1);
     assert.equal(state.blobs[0].type, 'application/pdf');
 });
+
+test('PDF preview provides a separate tab using the fetched PDF', async () => {
+    const state = preview({ javascript: false, extension: 'pdf' });
+    await state.run();
+    const open = state.elements.find(node => node.textContent === 'PDFを別タブで開く');
+    assert.equal(open.href, 'blob:test-1');
+    assert.equal(open.target, '_blank');
+    assert.equal(state.requests.length, 1);
+});

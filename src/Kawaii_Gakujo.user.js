@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kawaii Gakujo (Safari Userscripts)
 // @namespace    https://github.com/meidon-jp/kawaii-gakujo-safari
-// @version      1.13.0
+// @version      1.13.1
 // @description  READMEを必ず読んでからご利用ください：https://github.com/meidon-jp/kawaii-gakujo-safari/blob/main/README.md
 // @author       woody_1227
 // @license      MIT
@@ -2581,152 +2581,172 @@
             const match = textMatch || hrefMatch;
             return match ? previewMimeTypes[match[1].toLowerCase()] : null;
         };
-        const fileLinks = Array.from(document.querySelectorAll("a")).filter(a => getPreviewType(a));
+        const scanFilePreviews = () => {
+            const fileLinks = Array.from(document.querySelectorAll("a")).filter(a => getPreviewType(a));
 
-        fileLinks.forEach(link => {
-            if (link.dataset.cgFilePreviewed) return;
-            link.dataset.cgFilePreviewed = "1";
+            fileLinks.forEach(link => {
+                if (link.dataset.cgFilePreviewed) return;
+                link.dataset.cgFilePreviewed = "1";
 
-            const wrapper = document.createElement("div");
-            wrapper.className = "cg-preview-wrapper";
-            wrapper.style.marginTop = "10px";
-            wrapper.style.marginBottom = "20px";
-            wrapper.style.width = "100%";
-            wrapper.style.border = "1px solid #ccc";
-            wrapper.style.borderRadius = "4px";
-            wrapper.style.overflow = "hidden";
-            wrapper.style.display = "none";
+                const wrapper = document.createElement("div");
+                wrapper.className = "cg-preview-wrapper";
+                wrapper.style.marginTop = "10px";
+                wrapper.style.marginBottom = "20px";
+                wrapper.style.width = "100%";
+                wrapper.style.border = "1px solid rgba(255, 255, 255, 0.75)";
+                wrapper.style.borderRadius = "16px";
+                wrapper.style.background = "rgba(255, 255, 255, 0.82)";
+                wrapper.style.boxShadow = "0 8px 24px rgba(104, 78, 118, 0.12)";
+                wrapper.style.backdropFilter = "blur(8px)";
+                wrapper.style.overflow = "hidden";
+                wrapper.style.display = "none";
 
-            const iframe = document.createElement("iframe");
-            iframe.style.width = "100%";
-            iframe.style.height = "600px";
-            iframe.style.border = "none";
-            iframe.style.display = "block";
-            iframe.src = "about:blank";
-            wrapper.appendChild(iframe);
+                const iframe = document.createElement("iframe");
+                iframe.style.width = "100%";
+                iframe.style.height = "600px";
+                iframe.style.border = "none";
+                iframe.style.display = "block";
+                iframe.src = "about:blank";
+                wrapper.appendChild(iframe);
 
-            const showPreview = blob => {
-                const type = getPreviewType(link) || blob.type;
-                const url = URL.createObjectURL(new Blob([blob], { type }));
-                if (type.startsWith("image/")) {
-                    const image = document.createElement("img");
-                    image.alt = link.innerText.trim();
-                    image.style.display = "block";
-                    image.style.maxWidth = "100%";
-                    image.style.maxHeight = "600px";
-                    image.style.width = "auto";
-                    image.style.height = "auto";
-                    image.style.margin = "0 auto";
-                    image.onload = image.onerror = () => URL.revokeObjectURL(url);
-                    image.src = url;
-                    iframe.style.display = "none";
-                    wrapper.style.width = "fit-content";
-                    wrapper.style.maxWidth = "100%";
-                    wrapper.appendChild(image);
-                } else {
-                    iframe.src = url;
-                }
-            };
-
-            const insertWrapper = (shouldScroll) => {
-                const historyBlock = link.closest(".histry-my-block, .history-my-block");
-                if (historyBlock) {
-                    historyBlock.appendChild(wrapper);
-                } else {
-                    const blockParent = link.closest("table, ul, dl, .c-form-box, .c-contents-body");
-                    const insertTarget = blockParent ? blockParent : link;
-
-                    let next = insertTarget.nextSibling;
-                    while (next && next.classList && next.classList.contains("cg-preview-wrapper")) {
-                        next = next.nextSibling;
-                    }
-                    if (next) {
-                        insertTarget.parentNode.insertBefore(wrapper, next);
+                const showPreview = blob => {
+                    const type = getPreviewType(link) || blob.type;
+                    const url = URL.createObjectURL(new Blob([blob], { type }));
+                    if (type.startsWith("image/")) {
+                        const image = document.createElement("img");
+                        image.alt = link.innerText.trim();
+                        image.style.display = "block";
+                        image.style.maxWidth = "100%";
+                        image.style.maxHeight = "600px";
+                        image.style.width = "auto";
+                        image.style.height = "auto";
+                        image.style.margin = "0 auto";
+                        image.onload = image.onerror = () => URL.revokeObjectURL(url);
+                        image.src = url;
+                        iframe.style.display = "none";
+                        wrapper.style.width = "fit-content";
+                        wrapper.style.maxWidth = "100%";
+                        wrapper.appendChild(image);
                     } else {
-                        insertTarget.parentNode.appendChild(wrapper);
+                        iframe.src = url;
                     }
-                }
+                };
 
-                if (shouldScroll) {
-                    setTimeout(() => wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
-                }
-            };
+                const insertWrapper = (shouldScroll) => {
+                    const historyBlock = link.closest(".histry-my-block, .history-my-block");
+                    if (historyBlock) {
+                        historyBlock.appendChild(wrapper);
+                    } else {
+                        const blockParent = link.closest("table, ul, dl, .c-form-box, .c-contents-body");
+                        const insertTarget = blockParent ? blockParent : link;
 
-            if (link.href && link.href.startsWith("javascript:")) {
-                iframe.name = "file_preview_" + Math.random().toString(36).substr(2, 9);
+                        let next = insertTarget.nextSibling;
+                        while (next && next.classList && next.classList.contains("cg-preview-wrapper")) {
+                            next = next.nextSibling;
+                        }
+                        if (next) {
+                            insertTarget.parentNode.insertBefore(wrapper, next);
+                        } else {
+                            insertTarget.parentNode.appendChild(wrapper);
+                        }
+                    }
 
-                const previewBtn = document.createElement("button");
-                previewBtn.innerText = "ファイルをプレビュー";
-                previewBtn.type = "button";
-                previewBtn.className = "c-btn c-btn-line c-btn-sm";
-                previewBtn.style.marginTop = "5px";
-                previewBtn.style.marginBottom = "5px";
-                previewBtn.style.display = "block";
+                    if (shouldScroll) {
+                        setTimeout(() => wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+                    }
+                };
 
-                previewBtn.addEventListener("click", () => {
+                if (link.href && link.href.startsWith("javascript:")) {
+                    iframe.name = "file_preview_" + Math.random().toString(36).substr(2, 9);
+
+                    const previewBtn = document.createElement("button");
+                    previewBtn.innerText = "📄 ファイルをプレビュー";
+                    previewBtn.type = "button";
+                    previewBtn.className = "c-btn c-btn-line c-btn-sm";
+                    previewBtn.style.marginTop = "5px";
+                    previewBtn.style.marginBottom = "5px";
+                    previewBtn.style.display = "block";
+                    previewBtn.style.borderRadius = "999px";
+                    previewBtn.style.background = "rgba(255, 255, 255, 0.8)";
+                    previewBtn.style.border = "1px solid rgba(196, 166, 205, 0.65)";
+                    previewBtn.style.color = "#674f70";
+                    previewBtn.style.padding = "8px 16px";
+                    previewBtn.style.cursor = "pointer";
+
+                    previewBtn.addEventListener("click", () => {
+                        wrapper.style.display = "block";
+                        previewBtn.style.display = "none";
+                        insertWrapper(true);
+
+                        const doc = iframe.contentDocument || iframe.contentWindow.document;
+                        if (doc) doc.body.innerHTML = "<div style='font-family: sans-serif; padding: 20px;'>読み込み中...</div>";
+
+                        const originalJqSubmit = window.jQuery ? window.jQuery.fn.submit : null;
+                        const originalNativeSubmit = HTMLFormElement.prototype.submit;
+                        let submittedForm = null;
+
+                        if (originalJqSubmit) {
+                            window.jQuery.fn.submit = function () {
+                                submittedForm = this[0];
+                                return this;
+                            };
+                        }
+                        HTMLFormElement.prototype.submit = function () {
+                            submittedForm = this;
+                        };
+
+                        link.click();
+
+                        setTimeout(async () => {
+                            if (originalJqSubmit) window.jQuery.fn.submit = originalJqSubmit;
+                            HTMLFormElement.prototype.submit = originalNativeSubmit;
+
+                            if (typeof isSubmit !== 'undefined') window.isSubmit = false;
+                            if (typeof closeLoading === 'function') window.closeLoading();
+
+                            if (submittedForm) {
+                                try {
+                                    const blob = await fetchPreviewBlob(submittedForm.action, submittedForm);
+                                    showPreview(blob);
+                                } catch (e) {
+                                    const doc2 = iframe.contentDocument || iframe.contentWindow.document;
+                                    if (doc2) doc2.body.innerHTML = "<div style='font-family: sans-serif; padding: 20px; color: red;'>読み込みに失敗しました。</div>";
+                                }
+                            } else {
+                                const doc2 = iframe.contentDocument || iframe.contentWindow.document;
+                                if (doc2) doc2.body.innerHTML = "<div style='font-family: sans-serif; padding: 20px; color: red;'>フォームの送信を検知できませんでした。</div>";
+                            }
+                        }, 50);
+                    });
+
+                    link.parentNode.insertBefore(previewBtn, link.nextSibling);
+                } else {
                     wrapper.style.display = "block";
-                    previewBtn.style.display = "none";
-                    insertWrapper(true);
+                    insertWrapper(false);
 
                     const doc = iframe.contentDocument || iframe.contentWindow.document;
                     if (doc) doc.body.innerHTML = "<div style='font-family: sans-serif; padding: 20px;'>読み込み中...</div>";
 
-                    const originalJqSubmit = window.jQuery ? window.jQuery.fn.submit : null;
-                    const originalNativeSubmit = HTMLFormElement.prototype.submit;
-                    let submittedForm = null;
-
-                    if (originalJqSubmit) {
-                        window.jQuery.fn.submit = function () {
-                            submittedForm = this[0];
-                            return this;
-                        };
-                    }
-                    HTMLFormElement.prototype.submit = function () {
-                        submittedForm = this;
-                    };
-
-                    link.click();
-
-                    setTimeout(async () => {
-                        if (originalJqSubmit) window.jQuery.fn.submit = originalJqSubmit;
-                        HTMLFormElement.prototype.submit = originalNativeSubmit;
-
-                        if (typeof isSubmit !== 'undefined') window.isSubmit = false;
-                        if (typeof closeLoading === 'function') window.closeLoading();
-
-                        if (submittedForm) {
-                            try {
-                                const blob = await fetchPreviewBlob(submittedForm.action, submittedForm);
-                                showPreview(blob);
-                            } catch (e) {
-                                const doc2 = iframe.contentDocument || iframe.contentWindow.document;
-                                if (doc2) doc2.body.innerHTML = "<div style='font-family: sans-serif; padding: 20px; color: red;'>読み込みに失敗しました。</div>";
-                            }
-                        } else {
+                    fetchPreviewBlob(link.href)
+                        .then(blob => {
+                            showPreview(blob);
+                        })
+                        .catch(e => {
                             const doc2 = iframe.contentDocument || iframe.contentWindow.document;
-                            if (doc2) doc2.body.innerHTML = "<div style='font-family: sans-serif; padding: 20px; color: red;'>フォームの送信を検知できませんでした。</div>";
-                        }
-                    }, 50);
-                });
-
-                link.parentNode.insertBefore(previewBtn, link.nextSibling);
-            } else {
-                wrapper.style.display = "block";
-                insertWrapper(false);
-
-                const doc = iframe.contentDocument || iframe.contentWindow.document;
-                if (doc) doc.body.innerHTML = "<div style='font-family: sans-serif; padding: 20px;'>読み込み中...</div>";
-
-                fetchPreviewBlob(link.href)
-                    .then(blob => {
-                        showPreview(blob);
-                    })
-                    .catch(e => {
-                        const doc2 = iframe.contentDocument || iframe.contentWindow.document;
-                        if (doc2) doc2.body.innerHTML = "<div style='font-family: sans-serif; padding: 20px; color: red;'>読み込みに失敗しました。</div>";
-                    });
-            }
-        });
+                            if (doc2) doc2.body.innerHTML = "<div style='font-family: sans-serif; padding: 20px; color: red;'>読み込みに失敗しました。</div>";
+                        });
+                }
+            });
+        };
+        scanFilePreviews();
+        if (typeof MutationObserver !== "undefined") {
+            let pending = false;
+            new MutationObserver(() => {
+                if (pending) return;
+                pending = true;
+                setTimeout(() => { pending = false; scanFilePreviews(); }, 100);
+            }).observe(document.body, { childList: true, subtree: true, characterData: true });
+        }
 
         document.addEventListener("click", event => {
             const button = event.target.closest("#cg-credit-info");

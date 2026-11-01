@@ -58,7 +58,9 @@ test('Cookie values round-trip Japanese task data and expire on deletion', () =>
 });
 
 // Minimal DOM doubles exercise the original preview event handlers, not a rewritten implementation.
-function preview({ javascript = true, jquery = true, method = 'POST', extension = 'pdf', status = 200 } = {}) {
+function preview({ javascript = true, jquery = true, method = 'POST', extension = 'pdf', status = 200, delayed = false } = {}) {
+    let observerCallback;
+    let available = !delayed;
     const timers = [];
     const elements = [];
     const requests = [];
@@ -102,7 +104,8 @@ function preview({ javascript = true, jquery = true, method = 'POST', extension 
     const context = vm.createContext({
         window, URL: PreviewURL, URLSearchParams, Blob,
         location: { href: 'https://gakujo.shizuoka.ac.jp/home' },
-        document: { querySelectorAll: () => [link], createElement: element },
+        document: { body: {}, querySelectorAll: () => available ? [link] : [], createElement: element },
+        MutationObserver: class { constructor(callback) { observerCallback = callback; } observe() {} },
         HTMLFormElement: { prototype: { submit: nativeSubmit } },
         FormData: class { constructor(value) { assert.equal(value, form); return data; } },
         setTimeout(callback, delay) { timers.push({ callback, delay }); },
@@ -121,7 +124,7 @@ function preview({ javascript = true, jquery = true, method = 'POST', extension 
     }
     vm.runInContext(source.slice(source.indexOf('        const previewMimeTypes ='),
         source.indexOf('        document.addEventListener("click", event =>', source.indexOf('        const previewMimeTypes ='))), context);
-    return { elements, requests, blobs, revoked, data, async run() {
+    return { elements, requests, blobs, revoked, data, async addLink() { available = true; observerCallback(); await timers.pop().callback(); await flush(); }, async run() {
         if (javascript) elements.find(node => node.tagName === 'button').listeners.click();
         for (const { callback } of timers.sort((a, b) => a.delay - b.delay)) await callback();
         await flush();
@@ -181,3 +184,12 @@ for (const [extension, mime] of [['pdf', 'application/pdf'], ['txt', 'text/plain
         }
     });
 }
+
+test('preview detects attachments added after startup without duplicating them', async () => {
+    const state = preview({ javascript: false, delayed: true });
+    assert.equal(state.requests.length, 0);
+    await state.addLink();
+    await state.addLink();
+    assert.equal(state.requests.length, 1);
+    assert.equal(state.blobs[0].type, 'application/pdf');
+});
